@@ -6,7 +6,7 @@
 #include "src/iotc/common/string_buffer.h"
 #include "src/iotc/iotc.h"
 #include "DHT.h"
- 
+//Hello World -Ravi
 #define DHTPIN D6
  
  // Alex H Hello World
