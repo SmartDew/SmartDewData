@@ -13,7 +13,7 @@
 #define DHTTYPE DHT22 
 
  // Keith was here
- 
+ //Linval Hello world
 #define WIFI_SSID "Alex"
 #define WIFI_PASSWORD "blackops124"
  
