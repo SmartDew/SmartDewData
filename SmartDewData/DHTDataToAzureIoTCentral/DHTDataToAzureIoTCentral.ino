@@ -10,6 +10,7 @@
 #define DHTPIN D6
  
 #define DHTTYPE DHT22 
+
  // Keith was here
  
 #define WIFI_SSID "Alex"
