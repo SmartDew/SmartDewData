@@ -11,7 +11,8 @@
  
  // Alex H Hello World
 #define DHTTYPE DHT22 
- 
+
+ // Keith was here
  
 #define WIFI_SSID "Alex"
 #define WIFI_PASSWORD "blackops124"
