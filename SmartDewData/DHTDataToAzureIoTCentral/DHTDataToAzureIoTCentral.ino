@@ -9,6 +9,7 @@
  
 #define DHTPIN D6
  
+ // Alex H Hello World
 #define DHTTYPE DHT22 
  
  
