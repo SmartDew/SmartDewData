@@ -3,17 +3,15 @@
 // license information.
  
 #include <ESP8266WiFi.h>
-#include "src/iotc/common/string_buffer.h"
-#include "src/iotc/iotc.h"
-#include "DHT.h"
-//Hello World -Ravi
+#include <src/iotc/common/string_buffer.h>
+#include <src/iotc/iotc.h>
+#include <DHT.h>
+#include <wifimanager.h>
+
 #define DHTPIN D6
  
- // Alex H Hello World
 #define DHTTYPE DHT22 
 
- // Keith was here
- //Linval Hello world
 #define WIFI_SSID "Alex"
 #define WIFI_PASSWORD "blackops124"
  
