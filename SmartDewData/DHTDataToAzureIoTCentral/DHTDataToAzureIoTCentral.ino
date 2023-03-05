@@ -1,19 +1,38 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full
-// license information.
- 
-#include <ESP8266WiFi.h>
-#include <src/iotc/common/string_buffer.h>
-#include <src/iotc/iotc.h>
-#include <DHT.h>
-#include <wifimanager.h>
+// SmartDew Project File
+// Senior Design Team 21
+// FIU College of Engineering and Computing
+//    * Edward Heeren (Team Lead)
+//    * Keith Anderson
+//    * Linval Bailey
+//    * Ravi Pooran
+//    * Alex Zorrilla
+//
+// This code runs on a NodeMCU ESP8266 with a DHT22 module attached
+// It uses the WifiManager library to enable user to add their own wifi
+// MQTT data pushes information to the cloud
 
+//#include <ESP8266WiFi.h>
+// Adafruit_MQTT library https://github.com/adafruit/Adafruit_MQTT_Library
+#include <Adafruit_MQTT.h>
+// DHT sensor library by Adafruit https://github.com/adafruit/DHT-sensor-library
+#include <DHT.h>
+// WiFiManager library https://github.com/tzapu/WiFiManager
+#include <WiFiManager.h>
+
+// No longer using
+
+// #include "iotc/common/string_buffer.h"
+// #include "iotc/iotc.h"
+
+// DHT data pin is D6
 #define DHTPIN D6
- 
+
+// Using a DHT22 module
 #define DHTTYPE DHT22 
 
-#define WIFI_SSID "Alex"
-#define WIFI_PASSWORD "blackops124"
+// no longer using
+// #define WIFI_SSID "Alex"
+// #define WIFI_PASSWORD "blackops124"
  
 const char* ID_SCOPE = "0ne00865AD6";
 const char* DEVICE_ID = "dht22";
@@ -21,9 +40,12 @@ const char* PRIMARY_KEY = "AhUxWspmnfCztec1DoMNws7jGLi78zPdoDf6cv7Ig6o=";
  
 DHT dht(DHTPIN, DHTTYPE);
  
-void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo);
-#include "src/connection.h"
+//void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo);
+//#include "connection.h"
  
+// No longer using Azure, temporarily commenting out
+
+/*
 void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo) {
   // ConnectionStatus
   if (strcmp(callbackInfo->eventName, "ConnectionStatus") == 0) {
@@ -47,26 +69,43 @@ void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo) {
   if (strcmp(callbackInfo->eventName, "Command") == 0) {
     LOG_VERBOSE("- Command name was => %s\r\n", callbackInfo->tag);
   }
-}
+}*/
  
 void setup() {
   Serial.begin(9600);
+  Serial.println("Init");
+
+  // Creating the wifi manager
+  WiFiManager wifiManager;
+
+  //This is the name of the ESP8266 Wifi network
+  //Connect to ESP8266 then save user WIFI info
+  //Default gateway IP = 192.168.4.1
+  wifiManager.autoConnect("SmartDew-Wifi");
+
+  // Start dht connection
+  dht.begin();
+
+  //Using WiFiManager, the following should be depricated
+  //connect_wifi(WIFI_SSID, WIFI_PASSWORD);
+  //connect_client(ID_SCOPE, DEVICE_ID, PRIMARY_KEY);
  
-  connect_wifi(WIFI_SSID, WIFI_PASSWORD);
-  connect_client(ID_SCOPE, DEVICE_ID, PRIMARY_KEY);
- 
-  if (context != NULL) {
+  /* if (context != NULL) {
     lastTick = 0;  // set timer in the past to enable first telemetry a.s.a.p
-  }
-   dht.begin();
-}
+  } */ 
+
+
+} // end setup
  
 void loop() {
  
-float h = dht.readHumidity();
-float t = dht.readTemperature();
- 
-  
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+  Serial.printf("Humidity: %f || Temperature: %f/n", h, t);
+
+
+  // Need to re-implement MQTT connection
+  /*
   if (isConnected) {
  
     unsigned long ms = millis();
@@ -101,5 +140,6 @@ float t = dht.readTemperature();
     context = NULL;
     connect_client(ID_SCOPE, DEVICE_ID, PRIMARY_KEY);
   }
- 
-}
+  */
+
+} // end loop
