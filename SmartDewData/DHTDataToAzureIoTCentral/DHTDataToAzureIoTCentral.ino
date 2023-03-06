@@ -30,13 +30,14 @@
 // Using a DHT22 module
 #define DHTTYPE DHT22 
 
-// no longer using
-// #define WIFI_SSID "Alex"
-// #define WIFI_PASSWORD "blackops124"
- 
+// Interrupt pin (GPIO16 on ESP8266)
+#define INTERRUPT_PIN D0
+
 const char* ID_SCOPE = "0ne00865AD6";
 const char* DEVICE_ID = "dht22";
 const char* PRIMARY_KEY = "AhUxWspmnfCztec1DoMNws7jGLi78zPdoDf6cv7Ig6o=";
+
+const uint32 INTERRUPT_PERIOD = 15*1000000;
  
 DHT dht(DHTPIN, DHTTYPE);
  
@@ -70,9 +71,12 @@ void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo) {
     LOG_VERBOSE("- Command name was => %s\r\n", callbackInfo->tag);
   }
 }*/
+
+
  
 void setup() {
   Serial.begin(9600);
+  while(!Serial){}  // Wait for serial to initialize
   Serial.println("Init");
 
   // Creating the wifi manager
@@ -94,15 +98,18 @@ void setup() {
     lastTick = 0;  // set timer in the past to enable first telemetry a.s.a.p
   } */ 
 
-
 } // end setup
  
 void loop() {
- 
+  Serial.println("interrupt activated");
+
   float h = dht.readHumidity();
   float t = dht.readTemperature();
+  
   Serial.printf("Humidity: %f || Temperature: %f/n", h, t);
   Serial.println();
+
+  ESP.deepSleep(INTERRUPT_PERIOD); // 10 seconds in us
 
 
   // Need to re-implement MQTT connection
@@ -142,5 +149,4 @@ void loop() {
     connect_client(ID_SCOPE, DEVICE_ID, PRIMARY_KEY);
   }
   */
-  delay(2000);
 } // end loop
