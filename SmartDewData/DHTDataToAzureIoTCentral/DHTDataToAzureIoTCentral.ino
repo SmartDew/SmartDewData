@@ -24,7 +24,7 @@
 // #include "iotc/common/string_buffer.h"
 // #include "iotc/iotc.h"
 
-// DHT data pin is D6
+// DHT data pin D6
 #define DHTPIN D6
 
 // Using a DHT22 module
@@ -102,6 +102,7 @@ void loop() {
   float h = dht.readHumidity();
   float t = dht.readTemperature();
   Serial.printf("Humidity: %f || Temperature: %f/n", h, t);
+  Serial.println();
 
 
   // Need to re-implement MQTT connection
@@ -141,5 +142,5 @@ void loop() {
     connect_client(ID_SCOPE, DEVICE_ID, PRIMARY_KEY);
   }
   */
-
+  delay(2000);
 } // end loop
