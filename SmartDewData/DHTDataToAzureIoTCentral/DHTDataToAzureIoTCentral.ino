@@ -5,7 +5,7 @@
 //    * Keith Anderson
 //    * Linval Bailey
 //    * Ravi Pooran
-//    * Alex Zorrilla
+//    * Alex Zorrill
 //
 // This code runs on a NodeMCU ESP8266 with a DHT22 module attached
 // It uses the WifiManager library to enable user to add their own wifi
