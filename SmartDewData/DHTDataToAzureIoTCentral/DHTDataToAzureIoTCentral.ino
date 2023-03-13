@@ -10,6 +10,31 @@
 // This code runs on a NodeMCU ESP8266 with a DHT22 module attached
 // It uses the WifiManager library to enable user to add their own wifi
 // MQTT data pushes information to the cloud
+//				SmartDew Wiring
+//					
+//					
+//	.........................................
+//	!			                    							!
+//	!		    	  ------------------------- 	!
+//	!	    	  	| 	NODEMCU ESP8266	    |  	! 
+//	!PRESSURE<->|A0				        	D0	|...!
+//	!	      		|RSV        				D1	|
+//	!			      |RSV        				D2	|
+//	S     			|SD3        				D3	|
+//	P		      	|SD2        				D4	|
+//	S			      |SD1        				3V3	|
+//	T			      |CMD        				GND	|
+//	!		      	|SDO        				D5	|
+//	!			      |CLK	        			D6	| <-> DHT22 Com
+//	!		      	|GND		         		D7	|
+//	!		      	|3V3	        			D8	|
+//	!		      	|EN		        			RX	|
+//	!...........|RST	        			TX	|
+//			      	|GND	        			GND	| -> gnd bus
+//			      	|VIN	        			3V3	| -> 3v3 bus
+//			      	|			            			|
+//			      	|O<-RST|MICROUSB|FLSH->O|
+//			      	-------------------------
 
 //#include <ESP8266WiFi.h>
 // Adafruit_MQTT library https://github.com/adafruit/Adafruit_MQTT_Library
@@ -18,9 +43,9 @@
 #include <DHT.h>
 // WiFiManager library https://github.com/tzapu/WiFiManager
 #include <WiFiManager.h>
+#include <Wire.h>
 
 // No longer using
-
 // #include "iotc/common/string_buffer.h"
 // #include "iotc/iotc.h"
 
@@ -38,6 +63,15 @@ const char* DEVICE_ID = "dht22";
 const char* PRIMARY_KEY = "AhUxWspmnfCztec1DoMNws7jGLi78zPdoDf6cv7Ig6o=";
 
 const uint32 INTERRUPT_PERIOD = 15*1000000;
+
+// Pressure Sensor Consts
+const int pressureInput = A0; //select the analog input pin for the pressure transducer
+const float pressureZero = 102.4; //analog reading of pressure transducer at 0psi
+const float pressureMax = 348.16; //analog reading of pressure transducer at 100psi
+const int pressuretransducermaxPSI = 30; //psi value of transducer being used
+const int sensorreadDelay = 250; //constant integer to set the sensor read delay in milliseconds
+
+float pressureValue = 0; //variable to store the value coming from the pressure transducer
  
 DHT dht(DHTPIN, DHTTYPE);
  
@@ -90,10 +124,6 @@ void setup() {
   // Start dht connection
   dht.begin();
 
-  //Using WiFiManager, the following should be depricated
-  //connect_wifi(WIFI_SSID, WIFI_PASSWORD);
-  //connect_client(ID_SCOPE, DEVICE_ID, PRIMARY_KEY);
- 
   /* if (context != NULL) {
     lastTick = 0;  // set timer in the past to enable first telemetry a.s.a.p
   } */ 
@@ -105,12 +135,15 @@ void loop() {
 
   float h = dht.readHumidity();
   float t = dht.readTemperature();
-  
-  Serial.printf("Humidity: %f || Temperature: %f/n", h, t);
+
+  pressureValue = analogRead(pressureInput); //reads value from input pin and assigns to variable
+  pressureValue = ((pressureValue-pressureZero)*pressuretransducermaxPSI)/(pressureMax-pressureZero); //conversion equation to convert analog reading to psi
+
+  Serial.printf("Humidity: %f || Temperature: %f || Pressure: %f", h, t, pressureValue);
   Serial.println();
 
-  ESP.deepSleep(INTERRUPT_PERIOD); // 10 seconds in us
-
+  // rst pin (GPIO16) should be connected to D0, but only after programming or it won't flash. Connect switch?
+  ESP.deepSleep(INTERRUPT_PERIOD); 
 
   // Need to re-implement MQTT connection
   /*

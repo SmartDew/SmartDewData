@@ -1,0 +1,25 @@
+					SmartDew
+					
+					
+	.........................................
+	!										!
+	!			-------------------------	!
+	!			|	NODEMCU ESP8266		|	!
+	!			|A0					D0	|...!
+	!			|RSV				D1	|
+	!			|RSV				D2	|
+	S			|SD3				D3	|
+	P			|SD2				D4	|
+	S			|SD1				3V3	|
+	T			|CMD				GND	|
+	!			|SDO				D5	|
+	!			|CLK				D6	| <-> DHT22 Com
+	!			|GND				D7	|
+	!			|3V3				D8	|
+	!			|EN					RX	|
+	!...........|RST				TX	|
+				|GND				GND	| -> gnd bus
+				|VIN				3V3	| -> 3v3 bus
+				|						|
+				|O<-RST|MICROUSB|FLSH->O|
+				-------------------------
