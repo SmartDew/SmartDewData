@@ -36,7 +36,7 @@
 //			      	|O<-RST|MICROUSB|FLSH->O|
 //			      	-------------------------
 
-//#include <ESP8266WiFi.h>
+// #include <ESP8266WiFi.h>
 // Adafruit_MQTT library https://github.com/adafruit/Adafruit_MQTT_Library
 #include <Adafruit_MQTT.h>
 // DHT sensor library by Adafruit https://github.com/adafruit/DHT-sensor-library
@@ -61,6 +61,19 @@
 const char* ID_SCOPE = "0ne00865AD6";
 const char* DEVICE_ID = "dht22";
 const char* PRIMARY_KEY = "AhUxWspmnfCztec1DoMNws7jGLi78zPdoDf6cv7Ig6o=";
+
+//pressure reading at zero = 10.693359
+const float presAtZero = 1;
+//pressure reading at 1 L = 
+//pressure reading at 2 L = 
+//pressure reading at 3 L = 
+//pressure reading at 4 L = 
+//pressure reading at 5 L = 
+//pressure reading at 6 L = 
+//pressure reading at 7 L =
+//pressure reading at 8 L = 
+
+const float
 
 const uint32 INTERRUPT_PERIOD = 15*1000000;
 
@@ -106,10 +119,35 @@ void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo) {
   }
 }*/
 
+// Function to connect and reconnect as necessary to the MQTT server.
+// Should be called in the loop function and it will take care if connecting.
+void MQTT_connect() {
+  int8_t ret;
 
- 
+  // Stop if already connected.
+  if (mqtt.connected()) {
+    return;
+  }
+/*
+  Serial.print("Connecting to MQTT... ");
+
+  uint8_t retries = 3;
+  while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
+       Serial.println(mqtt.connectErrorString(ret));
+       Serial.println("Retrying MQTT connection in 10 seconds...");
+       mqtt.disconnect();
+       delay(10000);  // wait 10 seconds
+       retries--;
+       if (retries == 0) {
+         // basically die and wait for WDT to reset me
+         while (1);
+       }
+  }
+  Serial.println("MQTT Connected!");
+}
+ */
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   while(!Serial){}  // Wait for serial to initialize
   Serial.println("Init");
 
@@ -141,6 +179,11 @@ void loop() {
 
   Serial.printf("Humidity: %f || Temperature: %f || Pressure: %f", h, t, pressureValue);
   Serial.println();
+
+  // Ensure the connection to the MQTT server is alive (this will make the first
+  // connection and automatically reconnect when disconnected).  See the MQTT_connect
+  // function definition above.
+  MQTT_connect();
 
   // rst pin (GPIO16) should be connected to D0, but only after programming or it won't flash. Connect switch?
   ESP.deepSleep(INTERRUPT_PERIOD); 

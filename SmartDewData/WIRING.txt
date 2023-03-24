@@ -1,11 +1,11 @@
-					SmartDew
+				SmartDew Wiring
 					
 					
 	.........................................
 	!										!
 	!			-------------------------	!
 	!			|	NODEMCU ESP8266		|	!
-	!			|A0					D0	|...!
+	!PRESSURE<->|A0					D0	|...!
 	!			|RSV				D1	|
 	!			|RSV				D2	|
 	S			|SD3				D3	|
