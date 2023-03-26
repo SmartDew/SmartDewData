@@ -10,6 +10,7 @@
 // This code runs on a NodeMCU ESP8266 with a DHT22 module attached
 // It uses the WifiManager library to enable user to add their own wifi
 // MQTT data pushes information to the cloud
+//
 //				SmartDew Wiring
 //					
 //					
@@ -73,8 +74,6 @@ const float presAtZero = 1;
 //pressure reading at 7 L =
 //pressure reading at 8 L = 
 
-const float
-
 const uint32 INTERRUPT_PERIOD = 15*1000000;
 
 // Pressure Sensor Consts
@@ -119,6 +118,7 @@ void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo) {
   }
 }*/
 
+/*
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
 void MQTT_connect() {
@@ -128,6 +128,9 @@ void MQTT_connect() {
   if (mqtt.connected()) {
     return;
   }
+*/
+
+
 /*
   Serial.print("Connecting to MQTT... ");
 
@@ -180,10 +183,6 @@ void loop() {
   Serial.printf("Humidity: %f || Temperature: %f || Pressure: %f", h, t, pressureValue);
   Serial.println();
 
-  // Ensure the connection to the MQTT server is alive (this will make the first
-  // connection and automatically reconnect when disconnected).  See the MQTT_connect
-  // function definition above.
-  MQTT_connect();
 
   // rst pin (GPIO16) should be connected to D0, but only after programming or it won't flash. Connect switch?
   ESP.deepSleep(INTERRUPT_PERIOD); 
