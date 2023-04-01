@@ -46,6 +46,10 @@
 #include <WiFiManager.h>
 #include <Wire.h>
 
+// HCSR04 Sensor Library https://github.com/gamegine/HCSR04-ultrasonic-sensor-lib
+#include <HCSR04.h>
+HCSR04 hc(13, 15); // Initialize Pin D7, D8
+
 // No longer using
 // #include "iotc/common/string_buffer.h"
 // #include "iotc/iotc.h"
@@ -74,7 +78,7 @@ const float presAtZero = 1;
 //pressure reading at 7 L =
 //pressure reading at 8 L = 
 
-const uint32 INTERRUPT_PERIOD = 15*1000000;
+const uint32 INTERRUPT_PERIOD = 1*1000000;
 
 // Pressure Sensor Consts
 const int pressureInput = A0; //select the analog input pin for the pressure transducer
@@ -176,13 +180,13 @@ void loop() {
 
   float h = dht.readHumidity();
   float t = dht.readTemperature();
+  float dist = hc.dist();
 
   pressureValue = analogRead(pressureInput); //reads value from input pin and assigns to variable
   pressureValue = ((pressureValue-pressureZero)*pressuretransducermaxPSI)/(pressureMax-pressureZero); //conversion equation to convert analog reading to psi
 
-  Serial.printf("Humidity: %f || Temperature: %f || Pressure: %f", h, t, pressureValue);
+  Serial.printf("Humidity: %f || Temperature: %f || Distance: %f", h, t, dist);
   Serial.println();
-
 
   // rst pin (GPIO16) should be connected to D0, but only after programming or it won't flash. Connect switch?
   ESP.deepSleep(INTERRUPT_PERIOD); 
