@@ -18,8 +18,8 @@
 //	!			                    							!
 //	!		    	  ------------------------- 	!
 //	!	    	  	| 	NODEMCU ESP8266	    |  	! 
-//	!PRESSURE<->|A0				        	D0	|...!
-//	!	      		|RSV        				D1	|
+//	!           |A0				        	D0	|...!
+//	!	      		|RSV        				D1	| -> Motor Control Pin
 //	!			      |RSV        				D2	|
 //	S     			|SD3        				D3	|
 //	P		      	|SD2        				D4	|
@@ -27,12 +27,12 @@
 //	T			      |CMD        				GND	|
 //	!		      	|SDO        				D5	|
 //	!			      |CLK	        			D6	| <-> DHT22 Com
-//	!		      	|GND		         		D7	|
-//	!		      	|3V3	        			D8	|
+//	!		      	|GND		         		D7	| <-> JSN-SR04T Rx Trig
+//	!		      	|3V3	        			D8	| <-> JSN-SR04T TX Echo
 //	!		      	|EN		        			RX	|
 //	!...........|RST	        			TX	|
-//			      	|GND	        			GND	| -> gnd bus
-//			      	|VIN	        			3V3	| -> 3v3 bus
+//	PSU 3V3 <-> |GND	        			GND	| <-> gnd bus
+//  PSU 3v3 <->	|VIN	        			3V3	| <-> 3v3 bus
 //			      	|			            			|
 //			      	|O<-RST|MICROUSB|FLSH->O|
 //			      	-------------------------
@@ -63,12 +63,15 @@ HCSR04 hc(13, 15); // Initialize Pin D7, D8
 // Interrupt pin (GPIO16 on ESP8266)
 #define INTERRUPT_PIN D0
 
+// Turning this pin on activates the water pump
+#define MOTOR_PIN D1
+
 const char* ID_SCOPE = "0ne00865AD6";
 const char* DEVICE_ID = "dht22";
 const char* PRIMARY_KEY = "AhUxWspmnfCztec1DoMNws7jGLi78zPdoDf6cv7Ig6o=";
 
 //pressure reading at zero = 10.693359
-const float presAtZero = 1;
+const float waterVolumeMultiplier = 3.1415 * 25.8; // pi * r^2 * dist = cylindar volume 
 //pressure reading at 1 L = 
 //pressure reading at 2 L = 
 //pressure reading at 3 L = 
@@ -152,11 +155,17 @@ void MQTT_connect() {
   }
   Serial.println("MQTT Connected!");
 }
- */
+ */  
+ 
+// Global flag to prevent the device from going to sleep while the motor is running.
+bool motorOn = false;
+
 void setup() {
   Serial.begin(115200);
   while(!Serial){}  // Wait for serial to initialize
   Serial.println("Init");
+
+  pinMode(MOTOR_PIN, OUTPUT);
 
   // Creating the wifi manager
   WiFiManager wifiManager;
@@ -188,9 +197,25 @@ void loop() {
   Serial.printf("Humidity: %f || Temperature: %f || Distance: %f", h, t, dist);
   Serial.println();
 
+  while(dist > 30)
+  { 
+    motorOn = true;
+    Serial.printf("Dist = %f, motor on!\n", dist);
+    analogWrite(MOTOR_PIN, 128);
+    dist = hc.dist();
+    delay(1000);
+  }
+  if(dist <= 30)
+  {
+    motorOn = false;
+    Serial.println("Motor off");
+    analogWrite(MOTOR_PIN, 0);
+  }
   // rst pin (GPIO16) should be connected to D0, but only after programming or it won't flash. Connect switch?
-  ESP.deepSleep(INTERRUPT_PERIOD); 
-
+  if(!motorOn)
+  {
+    ESP.deepSleep(INTERRUPT_PERIOD); 
+  }
   // Need to re-implement MQTT connection
   /*
   if (isConnected) {
