@@ -45,6 +45,11 @@
 // WiFiManager library https://github.com/tzapu/WiFiManager
 #include <WiFiManager.h>
 #include <Wire.h>
+#include <ESP8266WiFi.h>
+
+// Azure code header files in iots directory
+#include "src/iotc/common/string_buffer.h"
+#include "src/iotc/iotc.h"
 
 // HCSR04 Sensor Library https://github.com/gamegine/HCSR04-ultrasonic-sensor-lib
 #include <HCSR04.h>
@@ -66,22 +71,13 @@ HCSR04 hc(13, 15); // Initialize Pin D7, D8
 // Turning this pin on activates the water pump
 #define MOTOR_PIN D1
 
-const char* ID_SCOPE = "0ne00865AD6";
-const char* DEVICE_ID = "dht22";
-const char* PRIMARY_KEY = "AhUxWspmnfCztec1DoMNws7jGLi78zPdoDf6cv7Ig6o=";
+const char* ID_SCOPE = "0ne009BAAEA";
+const char* DEVICE_ID = "1cs5dwz3pwz";
+const char* PRIMARY_KEY = "ii4RXJzO/2tfzHhsmnhmWjPJoRJfDooLbogCoxDZaLQ=";
 
-//pressure reading at zero = 10.693359
 const float waterVolumeMultiplier = 3.1415 * 25.8; // pi * r^2 * dist = cylindar volume 
-//pressure reading at 1 L = 
-//pressure reading at 2 L = 
-//pressure reading at 3 L = 
-//pressure reading at 4 L = 
-//pressure reading at 5 L = 
-//pressure reading at 6 L = 
-//pressure reading at 7 L =
-//pressure reading at 8 L = 
 
-const uint32 INTERRUPT_PERIOD = 1*1000000;
+const uint32 INTERRUPT_PERIOD = 10*1000000;
 
 // Pressure Sensor Consts
 const int pressureInput = A0; //select the analog input pin for the pressure transducer
@@ -94,13 +90,12 @@ float pressureValue = 0; //variable to store the value coming from the pressure 
  
 DHT dht(DHTPIN, DHTTYPE);
  
-//void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo);
-//#include "connection.h"
- 
-// No longer using Azure, temporarily commenting out
+void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo);
+#include "src/connection.h"
 
-/*
-void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo) {
+
+void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo) 
+{
   // ConnectionStatus
   if (strcmp(callbackInfo->eventName, "ConnectionStatus") == 0) {
     LOG_VERBOSE("Is connected ? %s (%d)",
@@ -123,7 +118,7 @@ void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo) {
   if (strcmp(callbackInfo->eventName, "Command") == 0) {
     LOG_VERBOSE("- Command name was => %s\r\n", callbackInfo->tag);
   }
-}*/
+}
 
 /*
 // Function to connect and reconnect as necessary to the MQTT server.
@@ -163,7 +158,7 @@ bool motorOn = false;
 void setup() {
   Serial.begin(115200);
   while(!Serial){}  // Wait for serial to initialize
-  Serial.println("Init");
+  Serial.println("\nInit");
 
   pinMode(MOTOR_PIN, OUTPUT);
 
@@ -178,9 +173,9 @@ void setup() {
   // Start dht connection
   dht.begin();
 
-  /* if (context != NULL) {
+  if (context != NULL) {
     lastTick = 0;  // set timer in the past to enable first telemetry a.s.a.p
-  } */ 
+  }
 
 } // end setup
  
@@ -191,12 +186,10 @@ void loop() {
   float t = dht.readTemperature();
   float dist = hc.dist();
 
-  pressureValue = analogRead(pressureInput); //reads value from input pin and assigns to variable
-  pressureValue = ((pressureValue-pressureZero)*pressuretransducermaxPSI)/(pressureMax-pressureZero); //conversion equation to convert analog reading to psi
-
   Serial.printf("Humidity: %f || Temperature: %f || Distance: %f", h, t, dist);
   Serial.println();
 
+  // Run motor when distance is more than 30 cm
   while(dist > 30)
   { 
     motorOn = true;
@@ -211,6 +204,51 @@ void loop() {
     Serial.println("Motor off");
     analogWrite(MOTOR_PIN, 0);
   }
+
+  // Azure connection code
+  if (isConnected) 
+  {
+    unsigned long ms = millis();
+
+    char msg[64] = {0};
+    int pos = 0, errorCode = 0;
+
+    lastTick = ms;
+    Serial.printf("LoopID: %d", loopId);
+    if (loopId++ % 2 == 0) // send telemetry
+    {  
+      pos = snprintf(msg, sizeof(msg) - 1, "{\"Temperature\": %f}",
+                      t);
+      errorCode = iotc_send_telemetry(context, msg, pos);
+      Serial.println("Temp sent");
+
+      pos = snprintf(msg, sizeof(msg) - 1, "{\"Humidity\":%f}",
+                      h);
+      errorCode = iotc_send_telemetry(context, msg, pos);
+      Serial.println("Humidity sent");
+
+      pos = snprintf(msg, sizeof(msg) - 1, "{\"WaterVolume\":%f}",
+                      dist);
+      errorCode = iotc_send_telemetry(context, msg, pos);
+      Serial.println("WaterLevel sent");
+
+    } else {  // send property
+      
+    } 
+
+    msg[pos] = 0;
+
+    if (errorCode != 0) {
+      LOG_ERROR("Sending message has failed with error code %d", errorCode);
+    }
+    iotc_do_work(context);  // do background work for iotc
+  } else 
+  {
+    iotc_free_context(context);
+    context = NULL;
+    connect_client(ID_SCOPE, DEVICE_ID, PRIMARY_KEY);
+  }
+
   // rst pin (GPIO16) should be connected to D0, but only after programming or it won't flash. Connect switch?
   if(!motorOn)
   {
