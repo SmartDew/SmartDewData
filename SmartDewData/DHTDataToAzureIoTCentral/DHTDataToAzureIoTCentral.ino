@@ -77,17 +77,8 @@ const char* PRIMARY_KEY = "ii4RXJzO/2tfzHhsmnhmWjPJoRJfDooLbogCoxDZaLQ=";
 
 const float waterVolumeMultiplier = 3.1415 * 25.8; // pi * r^2 * dist = cylindar volume 
 
-const uint32 INTERRUPT_PERIOD = 10*1000000;
+const uint32 INTERRUPT_PERIOD = 100*1000000;
 
-// Pressure Sensor Consts
-const int pressureInput = A0; //select the analog input pin for the pressure transducer
-const float pressureZero = 102.4; //analog reading of pressure transducer at 0psi
-const float pressureMax = 348.16; //analog reading of pressure transducer at 100psi
-const int pressuretransducermaxPSI = 30; //psi value of transducer being used
-const int sensorreadDelay = 250; //constant integer to set the sensor read delay in milliseconds
-
-float pressureValue = 0; //variable to store the value coming from the pressure transducer
- 
 DHT dht(DHTPIN, DHTTYPE);
  
 void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo);
@@ -104,7 +95,6 @@ void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo)
     isConnected = callbackInfo->statusCode == IOTC_CONNECTION_OK;
     return;
   }
- 
   // payload buffer doesn't have a null ending.
   // add null ending in another buffer before print
   AzureIOT::StringBuffer buffer;
@@ -112,6 +102,8 @@ void on_event(IOTContext ctx, IOTCallbackInfo* callbackInfo)
     buffer.initialize(callbackInfo->payload, callbackInfo->payloadLength);
   }
  
+  LOG_VERBOSE("- [%s] event was received. Payload => %s\n",
+              callbackInfo->eventName, buffer.getLength() ? *buffer : "EMPTY");
   LOG_VERBOSE("- [%s] event was received. Payload => %s\n",
               callbackInfo->eventName, buffer.getLength() ? *buffer : "EMPTY");
  
@@ -190,7 +182,7 @@ void loop() {
   Serial.println();
 
   // Run motor when distance is more than 30 cm
-  while(dist > 30)
+  while(dist < -1)
   { 
     motorOn = true;
     Serial.printf("Dist = %f, motor on!\n", dist);
@@ -205,45 +197,46 @@ void loop() {
     analogWrite(MOTOR_PIN, 0);
   }
 
+
+  Serial.printf("isConnected: %d",isConnected);
   // Azure connection code
-  if (isConnected) 
-  {
+  if (isConnected) {
+ 
     unsigned long ms = millis();
-
-    char msg[64] = {0};
-    int pos = 0, errorCode = 0;
-
-    lastTick = ms;
-    Serial.printf("LoopID: %d", loopId);
-    if (loopId++ % 2 == 0) // send telemetry
-    {  
-      pos = snprintf(msg, sizeof(msg) - 1, "{\"Temperature\": %f}",
+    if (ms - lastTick > 10000) {  // send telemetry every 10 seconds
+      char msg[64] = {0};
+      int pos = 0, errorCode = 0;
+ 
+      lastTick = ms;
+      if (loopId++ % 2 == 0) 
+      {  // send telemetry
+        pos = snprintf(msg, sizeof(msg) - 1, "{\"Temperature\": %f}",
                       t);
-      errorCode = iotc_send_telemetry(context, msg, pos);
-      Serial.println("Temp sent");
+        errorCode = iotc_send_telemetry(context, msg, pos);
+        Serial.println("Temp sent");
 
-      pos = snprintf(msg, sizeof(msg) - 1, "{\"Humidity\":%f}",
-                      h);
-      errorCode = iotc_send_telemetry(context, msg, pos);
-      Serial.println("Humidity sent");
+        pos = snprintf(msg, sizeof(msg) - 1, "{\"Humidity\":%f}",
+                        h);
+        errorCode = iotc_send_telemetry(context, msg, pos);
+        Serial.println("Humidity sent");
 
-      pos = snprintf(msg, sizeof(msg) - 1, "{\"WaterVolume\":%f}",
-                      dist);
-      errorCode = iotc_send_telemetry(context, msg, pos);
-      Serial.println("WaterLevel sent");
-
-    } else {  // send property
-      
-    } 
-
-    msg[pos] = 0;
-
-    if (errorCode != 0) {
-      LOG_ERROR("Sending message has failed with error code %d", errorCode);
+        pos = snprintf(msg, sizeof(msg) - 1, "{\"WaterVolume\":%f}",
+                        dist);
+        errorCode = iotc_send_telemetry(context, msg, pos);
+        Serial.println("WaterLevel sent");
+      } else {  // send property
+        
+      } 
+  
+      msg[pos] = 0;
+ 
+      if (errorCode != 0) {
+        LOG_ERROR("Sending message has failed with error code %d", errorCode);
+      }
     }
+ 
     iotc_do_work(context);  // do background work for iotc
-  } else 
-  {
+  } else {
     iotc_free_context(context);
     context = NULL;
     connect_client(ID_SCOPE, DEVICE_ID, PRIMARY_KEY);
